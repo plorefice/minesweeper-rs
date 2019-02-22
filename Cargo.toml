@@ -1,0 +1,11 @@
+[package]
+name = "ai-learns-minesweeper"
+version = "0.1.0"
+authors = ["Pietro Lorefice <pietro.lorefice@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+piston_window = "0.89.0"
+failure = "0.1.5"
+image = "*"
+rand = "0.6.5"
