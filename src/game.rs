@@ -21,6 +21,7 @@ pub struct Cell {
 
 pub struct Field {
     cells: HashMap<(u32, u32), Cell>,
+    size: (u32, u32),
     n_bombs: usize,
     n_hidden: usize,
 
@@ -29,21 +30,20 @@ pub struct Field {
 }
 
 impl Field {
-    pub const SIZE: (u32, u32) = (32, 32);
-
     pub fn new<R: rand::Rng + ?Sized>(
         rng: &mut R,
-        n: usize,
+        size: (u32, u32),
+        bombs: usize,
         textures: Vec<pw::G2dTexture>,
     ) -> Field {
         let mut cells = HashMap::new();
 
         let bomb_indices =
-            rand::seq::index::sample(rng, (Self::SIZE.0 * Self::SIZE.1) as usize, n).into_vec();
+            rand::seq::index::sample(rng, (size.0 * size.1) as usize, bombs).into_vec();
 
-        for idx in 0..(Self::SIZE.0 * Self::SIZE.1) {
+        for idx in 0..(size.0 * size.1) {
             cells.insert(
-                (idx % Self::SIZE.0, idx / Self::SIZE.0),
+                (idx % size.0, idx / size.0),
                 Cell {
                     state: if bomb_indices.contains(&(idx as usize)) {
                         CellState::Bomb
@@ -55,19 +55,19 @@ impl Field {
             );
         }
 
-        let n_bombs = n;
         let n_hidden = cells.len();
 
         let mut field = Field {
             cells,
-            n_bombs,
+            size,
             n_hidden,
+            n_bombs: bombs,
             mouse: (0.0, 0.0),
             textures,
         };
 
-        for y in 0..Self::SIZE.1 {
-            for x in 0..Self::SIZE.0 {
+        for y in 0..size.1 {
+            for x in 0..size.0 {
                 if field.cell_at(x, y).state == CellState::Bomb {
                     continue;
                 }
@@ -99,8 +99,8 @@ impl Field {
         let (x, y) = (i64::from(x), i64::from(y));
         let mut v = Vec::with_capacity(8);
 
-        for dy in (y - 1).max(0)..(y + 2).min(Self::SIZE.1.into()) {
-            for dx in (x - 1).max(0)..(x + 2).min(Self::SIZE.0.into()) {
+        for dy in (y - 1).max(0)..(y + 2).min(self.size.1.into()) {
+            for dx in (x - 1).max(0)..(x + 2).min(self.size.0.into()) {
                 if (dx, dy) != (x, y) {
                     v.push((dx as u32, dy as u32));
                 }
@@ -203,7 +203,12 @@ impl Field {
 
     fn reset(&mut self) {
         let last_mouse_pos = self.mouse;
-        *self = Field::new(&mut rand::thread_rng(), 30, self.textures.clone());
+        *self = Field::new(
+            &mut rand::thread_rng(),
+            self.size,
+            self.n_bombs,
+            self.textures.clone(),
+        );
         self.mouse = last_mouse_pos;
     }
 }

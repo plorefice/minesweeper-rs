@@ -7,9 +7,11 @@ mod game;
 use game::*;
 
 fn main() -> Result<(), Error> {
+    let field_size = (10, 10);
+
     let mut window: pw::PistonWindow = pw::WindowSettings::new(
         "Minesweeper",
-        (CELL_SIZE.0 * Field::SIZE.0, CELL_SIZE.1 * Field::SIZE.1),
+        (CELL_SIZE.0 * field_size.0, CELL_SIZE.1 * field_size.1),
     )
     .opengl(pw::OpenGL::V4_1)
     .exit_on_esc(true)
@@ -18,7 +20,8 @@ fn main() -> Result<(), Error> {
 
     let mut field = Field::new(
         &mut rand::thread_rng(),
-        30,
+        field_size,
+        12,
         decode_tileset("res/tileset.jpg", &mut window.factory)?,
     );
 
