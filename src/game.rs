@@ -10,6 +10,7 @@ pub enum CellState {
     Value(u8),
     Empty,
     Bomb,
+    DeathBomb,
 }
 
 #[derive(Debug)]
@@ -20,6 +21,9 @@ pub struct Cell {
 
 pub struct Field {
     cells: HashMap<(u32, u32), Cell>,
+    n_bombs: usize,
+    n_hidden: usize,
+
     mouse: (f64, f64),
     textures: Vec<pw::G2dTexture>,
 }
@@ -51,8 +55,13 @@ impl Field {
             );
         }
 
+        let n_bombs = n;
+        let n_hidden = cells.len();
+
         let mut field = Field {
             cells,
+            n_bombs,
+            n_hidden,
             mouse: (0.0, 0.0),
             textures,
         };
@@ -115,6 +124,7 @@ impl Field {
                 &self.textures[0]
             } else {
                 match cell.state {
+                    CellState::DeathBomb => &self.textures[1],
                     CellState::Bomb => &self.textures[2],
                     CellState::Empty => &self.textures[3],
                     CellState::Value(n) => &self.textures[4 + (usize::from(n) - 1)],
@@ -141,10 +151,19 @@ impl Field {
 
     pub fn mouse_click(&mut self, b: &pw::Button) {
         if let pw::Button::Mouse(pw::MouseButton::Left) = b {
-            self.reveal(
+            let (x, y) = (
                 (self.mouse.0 as u32) / CELL_SIZE.0,
                 (self.mouse.1 as u32) / CELL_SIZE.1,
             );
+
+            self.reveal(x, y);
+
+            if self.cell_at(x, y).state == CellState::Bomb {
+                self.cell_mut_at(x, y).state = CellState::DeathBomb;
+                self.lose();
+            } else if self.n_hidden == self.n_bombs {
+                self.win();
+            }
         }
     }
 
@@ -159,6 +178,20 @@ impl Field {
                     self.reveal(x, y);
                 }
             }
+
+            self.n_hidden -= 1;
+        }
+    }
+
+    fn lose(&mut self) {
+        for (_, c) in self.cells.iter_mut() {
+            c.hidden = false;
+        }
+    }
+
+    fn win(&mut self) {
+        for (_, c) in self.cells.iter_mut() {
+            c.hidden = false;
         }
     }
 }
