@@ -150,20 +150,26 @@ impl Field {
     }
 
     pub fn mouse_click(&mut self, b: &pw::Button) {
-        if let pw::Button::Mouse(pw::MouseButton::Left) = b {
-            let (x, y) = (
-                (self.mouse.0 as u32) / CELL_SIZE.0,
-                (self.mouse.1 as u32) / CELL_SIZE.1,
-            );
+        use pw::{Button, Key, MouseButton};
 
-            self.reveal(x, y);
+        match b {
+            Button::Mouse(MouseButton::Left) => {
+                let (x, y) = (
+                    (self.mouse.0 as u32) / CELL_SIZE.0,
+                    (self.mouse.1 as u32) / CELL_SIZE.1,
+                );
 
-            if self.cell_at(x, y).state == CellState::Bomb {
-                self.cell_mut_at(x, y).state = CellState::DeathBomb;
-                self.lose();
-            } else if self.n_hidden == self.n_bombs {
-                self.win();
+                self.reveal(x, y);
+
+                if self.cell_at(x, y).state == CellState::Bomb {
+                    self.cell_mut_at(x, y).state = CellState::DeathBomb;
+                    self.lose();
+                } else if self.n_hidden == self.n_bombs {
+                    self.win();
+                }
             }
+            Button::Keyboard(Key::R) => self.reset(),
+            _ => (),
         }
     }
 
@@ -193,5 +199,11 @@ impl Field {
         for (_, c) in self.cells.iter_mut() {
             c.hidden = false;
         }
+    }
+
+    fn reset(&mut self) {
+        let last_mouse_pos = self.mouse;
+        *self = Field::new(&mut rand::thread_rng(), 30, self.textures.clone());
+        self.mouse = last_mouse_pos;
     }
 }
